@@ -12,8 +12,7 @@ To run these services, you'll need the following installed:
 * **Maven**
 * **PostgreSQL**
 * **ActiveMQ (v5.x)**
-* **Git**
-* **Postman / cURL** for API testing
+* **Postman ** for API testing
 
 ---
 
