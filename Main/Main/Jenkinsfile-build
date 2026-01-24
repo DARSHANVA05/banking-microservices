@@ -46,7 +46,7 @@ pipeline {
     post {
         success {
             echo "Build & tests successful. Triggering SonarQube pipeline..."
-            build job: 'bm-orchestrator-sonarqube', wait: false
+            //build job: 'bm-orchestrator-sonarqube', wait: false
         }
 
         failure {
