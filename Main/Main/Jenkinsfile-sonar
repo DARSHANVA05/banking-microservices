@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         APP_DIR = "Main/Main"  // Path to Spring Boot app
-        SONAR_HOST_URL = "http://localhost:9000"  // Replace with your SonarQube server URL
-        SONAR_TOKEN = "<YOUR_SONAR_TOKEN>"        // Replace with your SonarQube token
+        SONAR_HOST_URL = "http://localhost:9000"  // SonarQube server URL
         SONAR_PROJECT_KEY = "banking-microservice-orchestrator"
         SONAR_PROJECT_NAME = "Banking Microservice Orchestrator"
         SONAR_PROJECT_VERSION = "1.0"
@@ -23,14 +22,17 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 dir("${APP_DIR}") {
-                    bat """
-                        mvn sonar:sonar ^
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
-                        -Dsonar.projectName="${SONAR_PROJECT_NAME}" ^
-                        -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ^
-                        -Dsonar.host.url=${SONAR_HOST_URL} ^
-                        -Dsonar.login=${SONAR_TOKEN}
-                    """
+                    // Inject token from Jenkins Credentials securely
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                        bat """
+                            mvn sonar:sonar ^
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
+                            -Dsonar.projectName="${SONAR_PROJECT_NAME}" ^
+                            -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ^
+                            -Dsonar.host.url=${SONAR_HOST_URL} ^
+                            -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
                 }
             }
         }
@@ -38,7 +40,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 echo "Waiting for SonarQube Quality Gate..."
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') { // Increase timeout if analysis is large
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -47,10 +49,10 @@ pipeline {
 
     post {
         success {
-            echo "SonarQube Quality Gate PASSED"
+            echo "✅ SonarQube Quality Gate PASSED"
         }
         failure {
-            echo "SonarQube Quality Gate FAILED"
+            echo "❌ SonarQube Quality Gate FAILED"
         }
     }
 }
