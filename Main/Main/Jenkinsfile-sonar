@@ -13,7 +13,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "Checking out repo..."
+                echo "Checking out repository..."
                 checkout scm
             }
         }
@@ -31,16 +31,20 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 dir("${APP_DIR}") {
-                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                        bat """
-                            mvn sonar:sonar ^
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
-                            -Dsonar.projectName="${SONAR_PROJECT_NAME}" ^
-                            -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ^
-                            -Dsonar.host.url=${SONAR_HOST_URL} ^
-                            -Dsonar.login=%SONAR_TOKEN% ^
-                            -Dsonar.java.binaries=target/classes
-                        """
+                    // This wrapper connects the analysis to this pipeline
+                    withSonarQubeEnv('SonarQubeLocal') {
+                        // Use the Jenkins token credential
+                        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                            bat """
+                                mvn sonar:sonar ^
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
+                                -Dsonar.projectName="${SONAR_PROJECT_NAME}" ^
+                                -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ^
+                                -Dsonar.host.url=${SONAR_HOST_URL} ^
+                                -Dsonar.login=%SONAR_TOKEN% ^
+                                -Dsonar.java.binaries=target/classes
+                            """
+                        }
                     }
                 }
             }
@@ -50,6 +54,7 @@ pipeline {
             steps {
                 echo "Waiting for SonarQube Quality Gate..."
                 timeout(time: 10, unit: 'MINUTES') {
+                    // This will fail the pipeline if Quality Gate fails
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -58,10 +63,10 @@ pipeline {
 
     post {
         success {
-            echo "SonarQube Quality Gate PASSED"
+            echo "Pipeline SUCCESS: SonarQube Quality Gate PASSED"
         }
         failure {
-            echo "SonarQube Quality Gate FAILED"
+            echo "Pipeline FAILURE: SonarQube Quality Gate FAILED or other error occurred"
         }
     }
 }
