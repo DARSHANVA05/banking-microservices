@@ -13,7 +13,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "Checking out repository..."
+                echo "Checking out repo..."
                 checkout scm
             }
         }
@@ -31,8 +31,7 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 dir("${APP_DIR}") {
-                    // Use stored SonarQube token directly
-                    withCredentials([string(credentialsId: 'sonarqube-bm-orchestrator', variable: 'SONAR_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                         bat """
                             mvn sonar:sonar ^
                             -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
@@ -51,7 +50,6 @@ pipeline {
             steps {
                 echo "Waiting for SonarQube Quality Gate..."
                 timeout(time: 10, unit: 'MINUTES') {
-                    // Wait for Quality Gate result
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -60,10 +58,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline SUCCESS: SonarQube Quality Gate PASSED"
+            echo "SonarQube Quality Gate PASSED"
         }
         failure {
-            echo "Pipeline FAILURE: SonarQube Quality Gate FAILED or other error occurred"
+            echo "SonarQube Quality Gate FAILED"
         }
     }
 }
