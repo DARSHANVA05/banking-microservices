@@ -30,8 +30,7 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 dir("${APP_DIR}") {
-                    // Use the SonarQube server configured in Jenkins
-                    withSonarQubeEnv('SonarQubeLocal') {   // <-- replace with your SonarQube server name
+                    withSonarQubeEnv('SonarQubeLocal') {
                         withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                             bat """
                                 mvn sonar:sonar ^
@@ -51,7 +50,6 @@ pipeline {
             steps {
                 echo "Waiting for SonarQube Quality Gate..."
                 timeout(time: 10, unit: 'MINUTES') {
-                    // This will abort the pipeline if Quality Gate fails
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -60,10 +58,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully. Quality Gate PASSED."
+            echo "Pipeline SUCCESS: SonarQube Quality Gate PASSED"
         }
         failure {
-            echo "Pipeline failed. Quality Gate FAILED or other error occurred."
+            echo "Pipeline FAILURE: SonarQube Quality Gate FAILED or other error occurred"
         }
     }
 }
