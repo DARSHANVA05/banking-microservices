@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         APP_DIR = "Main/Main"  // Path to Spring Boot app
+        SONAR_HOST_URL = "http://localhost:9000"  // SonarQube server URL
         SONAR_PROJECT_KEY = "banking-microservice-orchestrator"
         SONAR_PROJECT_NAME = "Banking Microservice Orchestrator"
         SONAR_PROJECT_VERSION = "1.0"
@@ -30,17 +31,17 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 dir("${APP_DIR}") {
-                    withSonarQubeEnv('SonarQubeLocal') {
-                        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                            bat """
-                                mvn sonar:sonar ^
-                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
-                                -Dsonar.projectName="${SONAR_PROJECT_NAME}" ^
-                                -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ^
-                                -Dsonar.login=%SONAR_TOKEN% ^
-                                -Dsonar.java.binaries=target/classes
-                            """
-                        }
+                    // Use stored SonarQube token directly
+                    withCredentials([string(credentialsId: 'sonarqube-bm-orchestrator', variable: 'SONAR_TOKEN')]) {
+                        bat """
+                            mvn sonar:sonar ^
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} ^
+                            -Dsonar.projectName="${SONAR_PROJECT_NAME}" ^
+                            -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ^
+                            -Dsonar.host.url=${SONAR_HOST_URL} ^
+                            -Dsonar.login=%SONAR_TOKEN% ^
+                            -Dsonar.java.binaries=target/classes
+                        """
                     }
                 }
             }
@@ -50,6 +51,7 @@ pipeline {
             steps {
                 echo "Waiting for SonarQube Quality Gate..."
                 timeout(time: 10, unit: 'MINUTES') {
+                    // Wait for Quality Gate result
                     waitForQualityGate abortPipeline: true
                 }
             }
